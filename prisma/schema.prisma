@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContentType {
+  MOVIE
+  SERIES
+  ANIME
+  DONGHUA
+}
+
+enum SharePermissionLevel {
+  VIEW_COMMENT_RATE
+  VIEW_COMMENT_SUGGEST_EDIT
+  COUPLE_FULL_CONTROL
+}
+
+enum LinkType {
+  STREAMING
+  INFO
+  DOWNLOAD
+  OTHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  googleId     String?  @unique
+
+  username     String   @unique
+  displayName  String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile      Profile?
+  lists        List[]
+  userItems    UserItem[]
+  externalLinks ExternalLink[]
+}
+
+model Profile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+
+  bio           String?
+  avatarUrl     String?
+
+  isPrivate     Boolean  @default(false)
+
+  themePrimary  String?
+  themeSecondary String?
+  borderRadius  Int?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model List {
+  id                  String      @id @default(cuid())
+  ownerId             String
+
+  title               String
+  type                ContentType
+
+  tags                String[]    @default([])
+
+  coverImageUrl       String?
+
+  isPublic            Boolean     @default(false)
+  isHiddenFromVisitors Boolean    @default(false)
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  owner               User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  listItems           ListItem[]
+
+  userItems UserItem[]
+}
+
+model Item {
+  id            String      @id @default(cuid())
+
+  title         String
+  type          ContentType
+
+  genres        String[]    @default([])
+  synopsis      String?
+
+  coverImageUrl String?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  listItems     ListItem[]
+  userItems     UserItem[]
+
+  
+
+  externalLinks ExternalLink[]
+}
+
+model ListItem {
+  id        String   @id @default(cuid())
+  listId    String
+  itemId    String
+
+  createdAt DateTime @default(now())
+
+  list      List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, itemId])
+}
+
+model UserItem {
+  id           String   @id @default(cuid())
+  userId       String
+  listId       String
+  itemId       String
+
+  rating       Int?
+  personalNote String?
+
+  tone         String?
+  maturity     String?
+  pacing       String?
+  romanceStyle String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  list         List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+model ExternalLink {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+
+  title     String
+  url       String
+  type      LinkType
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+
+  @@unique([userId, itemId])
+
+
+}
+
+
